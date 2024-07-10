@@ -56,14 +56,6 @@ parts:
       - libffi7
       - liblzma5
       - libyaml-0-2
-    override-stage: |
-      craftctl default
-
-      wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
-      apt-get install -f ./libssl1.1_1.1.0g-2ubuntu4_amd64.deb
-      wget http://http.us.debian.org/debian/pool/main/o/openldap/libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb
-      apt-get install -f ./libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb
-
     build-packages:
       - build-essential
       - curl
@@ -117,7 +109,14 @@ parts:
       
       # Generate schema and include as part of the container image
       ${CRAFT_PART_INSTALL}/fluent-bit/bin/fluent-bit -J > ${CRAFT_PART_INSTALL}/fluent-bit/etc/schema.json
+      
+      # Get missing packages 
+      wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+      dpkg -x ./libssl1.1_1.1.0g-2ubuntu4_amd64.deb ${CRAFT_PART_INSTALL}/
+      wget http://http.us.debian.org/debian/pool/main/o/openldap/libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb
+      dpkg -x ./libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb ${CRAFT_PART_INSTALL}/
 
     prime:
       - fluent-bit
       - etc
+      - usr
