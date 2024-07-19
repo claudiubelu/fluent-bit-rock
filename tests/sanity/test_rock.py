@@ -2,20 +2,24 @@
 # Copyright 2024 Canonical, Ltd.
 #
 
-import os
 import subprocess
 
+from k8s_test_harness.util import env_util
+import pytest
 
-def test_sanity():
-    image_variable = "ROCK_FLUENT_BIT"
+
+@pytest.mark.parametrize("image_version", ("2.1.6", "1.9.5"))
+def test_sanity(image_version):
+    rock = env_util.get_build_meta_info_for_rock_version(
+        "fluent-bit", image_version, "amd64"
+    )
+    image = rock.image
+
     entrypoint = "fluent-bit"
-    image = os.getenv(image_variable)
-    assert image is not None, f"${image_variable} is not set"
-
     docker_run = subprocess.run(
         ["docker", "run", "--rm", "--entrypoint", entrypoint, image, "--version"],
         capture_output=True,
         check=True,
         text=True,
     )
-    assert "Fluent Bit v2.1.6" in docker_run.stdout
+    assert f"Fluent Bit v{image_version}" in docker_run.stdout

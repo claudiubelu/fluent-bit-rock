@@ -6,6 +6,8 @@ import os
 
 from k8s_test_harness import harness
 from k8s_test_harness.util import exec_util
+from k8s_test_harness.util import env_util, k8s_util
+
 
 pytest_plugins = ["k8s_test_harness.plugin"]
 
@@ -13,34 +15,22 @@ LOG = logging.getLogger(__name__)
 
 
 def test_integration_fluent_bit(module_instance: harness.Instance):
-    image_name_env_variable = "ROCK_FLUENT_BIT"
+    fluent_bit_rock = env_util.get_build_meta_info_for_rock_version(
+        "fluent-bit", "2.1.6", "amd64"
+    )
 
-    image_uri = os.getenv(image_name_env_variable)
-    assert image_uri is not None, f"{image_name_env_variable} is not set"
-    image_split = image_uri.split(":")
-
-    helm_command = [
-        "k8s",
-        "helm",
-        "install",
-        "fluent-bit",
-        "--repo",
-        "https://fluent.github.io/helm-charts",
-        "fluent-bit",
-        "--namespace",
-        "fluent-bit",
-        "--create-namespace",
-        "--version",
-        "0.34.2",  # chart version with 2.1.6 app
-        "--set",
-        "installCRDs=true",
-        "--set",
-        f"image.repository={image_split[0]}",
-        "--set",
-        f"image.tag={image_split[1]}",
-        "--set",
-        "securityContext.runAsUser=584792",
+    images = [
+        k8s_util.HelmImage(fluent_bit_rock.image)
     ]
+
+    helm_command = k8s_util.get_helm_install_command(
+        "fluent-bit",
+        "fluent-bit",
+        namespace="fluent-bit",
+        repository="https://fluent.github.io/helm-charts",
+        chart_version="0.34.2", # chart version with 2.1.6 app
+        images=images,
+    )
 
     module_instance.exec(helm_command)
 
