@@ -6,7 +6,6 @@ license: Apache-2.0
 
 base: bare
 build-base: ubuntu@22.04
-#base: ubuntu@22.04
 platforms:
   amd64:
   arm64:
@@ -21,7 +20,7 @@ services:
     on-failure: shutdown
 
 parts:
-  cmake:
+  fluent-bit:
 # https://github.com/fluent/fluent-bit/blob/v2.1.6/dockerfiles/Dockerfile#L20
     source: https://github.com/fluent/fluent-bit
     source-type: git
@@ -109,9 +108,9 @@ parts:
       
       # Generate schema and include as part of the container image
       ${CRAFT_PART_INSTALL}/fluent-bit/bin/fluent-bit -J > ${CRAFT_PART_INSTALL}/fluent-bit/etc/schema.json
-      
+      ln -rs ${CRAFT_PART_INSTALL}/fluent-bit/bin/fluent-bit ${CRAFT_PART_INSTALL}/bin/fluent-bit
       # Get missing packages 
       wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
       dpkg -x ./libssl1.1_1.1.0g-2ubuntu4_amd64.deb ${CRAFT_PART_INSTALL}/
-      wget http://http.us.debian.org/debian/pool/main/o/openldap/libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb
-      dpkg -x ./libldap-2.4-2_2.4.47+dfsg-3+deb10u7_amd64.deb ${CRAFT_PART_INSTALL}/
+      wget http://security.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb
+      dpkg -x ./libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb ${CRAFT_PART_INSTALL}/

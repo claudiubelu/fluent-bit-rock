@@ -4,12 +4,15 @@
 import logging
 import os
 
-from test_util import harness, util
+from k8s_test_harness import harness
+from k8s_test_harness.util import exec_util
+
+pytest_plugins = ["k8s_test_harness.plugin"]
 
 LOG = logging.getLogger(__name__)
 
 
-def test_integration_fluent_bit(session_instance: harness.Instance):
+def test_integration_fluent_bit(module_instance: harness.Instance):
     image_name_env_variable = "ROCK_FLUENT_BIT"
 
     image_uri = os.getenv(image_name_env_variable)
@@ -39,16 +42,17 @@ def test_integration_fluent_bit(session_instance: harness.Instance):
         "securityContext.runAsUser=584792",
     ]
 
-    session_instance.exec(helm_command)
+    module_instance.exec(helm_command)
 
-    util.stubbornly(retries=5, delay_s=5).on(session_instance).exec(
+    exec_util.stubbornly(retries=5, delay_s=5).on(module_instance).exec(
         [
             "k8s",
-            "kubectl",
-            "rollout",
-            "status",
-            "daemonset",
-            "fluent-bit",
+             "kubectl",
+            "wait",
+            "--for=condition=ready",
+            "pod",
+            "-l",
+            "app.kubernetes.io/name=fluent-bit",
             "--namespace",
             "fluent-bit",
             "--timeout",
