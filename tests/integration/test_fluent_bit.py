@@ -47,7 +47,7 @@ def test_integration_fluent_bit(module_instance: harness.Instance):
     exec_util.stubbornly(retries=5, delay_s=5).on(module_instance).exec(
         [
             "k8s",
-             "kubectl",
+            "kubectl",
             "wait",
             "--for=condition=ready",
             "pod",
