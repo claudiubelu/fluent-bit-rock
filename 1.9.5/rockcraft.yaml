@@ -8,7 +8,6 @@ base: bare
 build-base: ubuntu@22.04
 platforms:
   amd64:
-  arm64:
 
 environment:
   RELEASE_VERSION: 1.9.5
