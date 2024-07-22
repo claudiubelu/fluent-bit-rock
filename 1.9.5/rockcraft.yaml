@@ -1,0 +1,119 @@
+name: fluent-bit
+summary: ROCK for the fluent-bit Project.
+description: This ROCK is a drop in replacement for the fluent/fluent-bit image.
+version: "1.9.5"
+license: Apache-2.0
+
+base: bare
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  RELEASE_VERSION: 1.9.5
+
+entrypoint-service: fluent-bit
+services:
+  fluent-bit:
+    override: replace
+    summary: "fluent-bit service"
+    startup: enabled
+    command: "/fluent-bit/bin/fluent-bit [ -c /fluent-bit/etc/fluent-bit.conf ]"
+    on-failure: shutdown
+
+parts:
+  # https://github.com/fluent/fluent-bit/blob/v1.9.5/dockerfiles/Dockerfile
+  fluent-bit:
+    source: https://github.com/fluent/fluent-bit
+    source-type: git
+    plugin: cmake
+    source-tag: v${CRAFT_PROJECT_VERSION}
+    stage-packages:
+      - ca-certificates
+      - libsasl2-2
+      - pkg-config
+      - libpq5
+      - libsystemd0
+      - zlib1g
+      - libatomic1
+      - libgcrypt20
+      - libzstd1
+      - liblz4-1
+      - libgssapi-krb5-2
+      - libgpg-error0
+      - libkrb5-3
+      - libk5crypto3
+      - libcom-err2
+      - libkrb5support0
+      - libgnutls30
+      - libkeyutils1
+      - libp11-kit0
+      - libidn2-0
+      - libunistring2
+      - libtasn1-6
+      - libnettle8
+      - libhogweed6
+      - libgmp10
+      - libffi7
+      - liblzma5
+      - libyaml-0-2
+    build-packages:
+      - build-essential
+      - curl
+      - ca-certificates
+      - cmake
+      - git
+      - make
+      - tar
+      - libssl-dev
+      - libsasl2-dev
+      - pkg-config
+      - libsystemd-dev
+      - zlib1g-dev
+      - libpq-dev
+      - postgresql-server-dev-all
+      - flex
+      - bison
+      - libyaml-dev
+      - wget
+    cmake-parameters:
+      - -DFLB_TRACE=Off
+      - -DFLB_RELEASE=On
+      - -DFLB_JEMALLOC=On
+      - -DFLB_TLS=On
+      - -DFLB_SHARED_LIB=Off
+      - -DFLB_EXAMPLES=Off
+      - -DFLB_HTTP_SERVER=On
+      - -DFLB_IN_EXEC=Off
+      - -DFLB_IN_SYSTEMD=On
+      - -DFLB_OUT_KAFKA=On
+      - -DFLB_OUT_PGSQL=On
+      - -DFLB_NIGHTLY_BUILD=""
+      - -DFLB_LOG_NO_CONTROL_CHARS=On
+    override-build: |
+      craftctl default
+
+      make -j "$(getconf _NPROCESSORS_ONLN)"
+      mkdir -p ${CRAFT_PART_INSTALL}/fluent-bit/bin/ ${CRAFT_PART_INSTALL}/fluent-bit/etc/ ${CRAFT_PART_INSTALL}/fluent-bit/log/ ${CRAFT_PART_INSTALL}/etc/ssl
+      install bin/fluent-bit ${CRAFT_PART_INSTALL}/fluent-bit/bin/
+      
+      # Configuration files
+      cp ${CRAFT_PART_SRC}/conf/fluent-bit.conf \
+      ${CRAFT_PART_SRC}/conf/parsers.conf \
+      ${CRAFT_PART_SRC}/conf/parsers_ambassador.conf \
+      ${CRAFT_PART_SRC}/conf/parsers_java.conf \
+      ${CRAFT_PART_SRC}/conf/parsers_extra.conf \
+      ${CRAFT_PART_SRC}/conf/parsers_openstack.conf \
+      ${CRAFT_PART_SRC}/conf/parsers_cinder.conf \
+      ${CRAFT_PART_SRC}/conf/plugins.conf \
+      ${CRAFT_PART_INSTALL}/fluent-bit/etc/
+      
+      # Generate schema and include as part of the container image
+      ${CRAFT_PART_INSTALL}/fluent-bit/bin/fluent-bit -J > ${CRAFT_PART_INSTALL}/fluent-bit/etc/schema.json
+      ln -rs ${CRAFT_PART_INSTALL}/fluent-bit/bin/fluent-bit ${CRAFT_PART_INSTALL}/bin/fluent-bit
+      # Get missing packages 
+      wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+      dpkg -x ./libssl1.1_1.1.0g-2ubuntu4_amd64.deb ${CRAFT_PART_INSTALL}/
+      wget http://security.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb
+      dpkg -x ./libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb ${CRAFT_PART_INSTALL}/
