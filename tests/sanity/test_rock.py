@@ -2,10 +2,8 @@
 # Copyright 2024 Canonical, Ltd.
 #
 
-import subprocess
-
-from k8s_test_harness.util import env_util
 import pytest
+from k8s_test_harness.util import docker_util, env_util
 
 
 @pytest.mark.parametrize("image_version", ("2.1.6", "1.9.5"))
@@ -16,10 +14,5 @@ def test_sanity(image_version):
     image = rock.image
 
     entrypoint = "fluent-bit"
-    docker_run = subprocess.run(
-        ["docker", "run", "--rm", "--entrypoint", entrypoint, image, "--version"],
-        capture_output=True,
-        check=True,
-        text=True,
-    )
-    assert f"Fluent Bit v{image_version}" in docker_run.stdout
+    process = docker_util.run_in_docker(image, [entrypoint, "--version"])
+    assert f"Fluent Bit v{image_version}" in process.stdout
